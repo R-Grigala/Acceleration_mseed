@@ -4,12 +4,17 @@ from obspy import UTCDateTime
 import numpy as np
 import logging
 from logging.handlers import RotatingFileHandler
+import csv
 
 # სკრიპტის სამუშაო დირექტორია
 SCRIPT_PATH = os.path.dirname(os.path.abspath(__file__))
 
 # მიწისძვრის დრო, რომელიც გადაეცემა როგორც არგუმენტი
-ORIGIN_TIME = UTCDateTime(sys.argv[1])
+EVENT_ID = sys.argv[1]
+LATITUDE = sys.argv[2]
+LONGITUDE = sys.argv[3]
+ORIGIN_TIME = UTCDateTime(sys.argv[4])
+
 START_TIME = ORIGIN_TIME - 120  # 120 წამით ადრე
 END_TIME = ORIGIN_TIME + 180  # 180 წამით გვიან
 
@@ -242,6 +247,36 @@ def collect_acceleration():
     except Exception as err:
         logger.exception("მოულოდნელი შეცდომა collect_acceleration ფუნქციაში: " + str(err))
 
+# More_G_Threshold.csv ფაილის შენახვა აქ
+def write_csv():
+    WORK_DIR = f'{TEMP_DIR}/{str(ORIGIN_TIME)[:4]}/{ORIGIN_TIME}'
+    os.makedirs(WORK_DIR, exist_ok=True)
+
+    more_g_threshold_csv_path = os.path.join(WORK_DIR, "g_accelerations.csv")
+
+    stations_over_threshold = set()  # ერთზე მეტ არხს რომ არ გაუტოლდეს
+
+    for station_key, data in MORE_G_THRESHOLD.items():
+        if not data["exported"]:
+            continue  # მხოლოდ ზღვარზე გადასულები
+
+        # station_key ფორმატი: NET_STA_CHAN  -> "GO_MTAG_HNE"
+        parts = station_key.split("_")
+        if len(parts) >= 2:
+            station_code = parts[1]  # MTAG, SHTA, etc.
+            stations_over_threshold.add(station_code)
+
+    # CSV ჩაწერა
+    with open(more_g_threshold_csv_path, "w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(["id", "latitude", "longitude", "station"])  # ჰედერი
+
+        for station in sorted(stations_over_threshold):
+            writer.writerow([EVENT_ID, LATITUDE, LONGITUDE, station])
+
+    logger.info(f"g_accelerations.csv ფაილი შენახულია: {more_g_threshold_csv_path}")
+
+
 # More_G_Threshold.txt ფაილის შენახვა აქ
 def write_txt():
     WORK_DIR = f'{TEMP_DIR}/{str(ORIGIN_TIME)[:4]}/{ORIGIN_TIME}'
@@ -268,5 +303,6 @@ if __name__ == "__main__":
         collect_acceleration()
         export_velocity()
         write_txt()
+        write_csv()  # <-- CSV-ს ჩაწერა
     except Exception as err:
         logger.exception("მოულოდნელი შეცდომა სკრიპტის შესრულებისას: " + str(err))

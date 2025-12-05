@@ -8,7 +8,7 @@ G = 9.81
 FDSN_CLIENT = Client("http://192.168.11.250:8080")
 
 NETWORK = "GO"
-STATION = "MTAG"
+STATION = "SHTL"
 CHANNEL_ACC = "HN*"
 CHANNEL_VEL = "HH*"
 
@@ -18,7 +18,7 @@ CHANNEL_VEL = "HH*"
 if len(sys.argv) > 1:
     origin_time_str = sys.argv[1]
 else:
-    origin_time_str = "2024-07-22T08:08:09.660"  # fallback/hardcode
+    origin_time_str = "2025-03-08 11:28:25.120"  # fallback/hardcode
 
 ORIGIN_TIME = UTCDateTime(origin_time_str)
 START_TIME = ORIGIN_TIME - 120
@@ -69,7 +69,7 @@ for tr in acc_stream:
 # --------------------------
 vel_inventory = FDSN_CLIENT.get_stations(
     network=NETWORK,
-    station=STATION,
+    station='SHTL',
     location="*",
     channel=CHANNEL_VEL,
     starttime=START_TIME,
